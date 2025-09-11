@@ -20,6 +20,10 @@ max_y = max(rect[1][1] for rect in rectangles)
 offset_x = (frame_w - max_x) // 2
 offset_y = (frame_h - max_y) // 2
 
+fps = 30
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+video_writer = cv2.VideoWriter(os.path.join(folder, "camera_output.mp4"), fourcc, fps, (frame_w, frame_h))
+
 while (True):
     ret, frame = camera.read()
 
@@ -44,6 +48,8 @@ while (True):
     
     if cv2.waitKey(1) & 0xFF == 27:
         break
+    
+    video_writer.write(frame)
 
 camera.release()
 cv2.destroyAllWindows()
