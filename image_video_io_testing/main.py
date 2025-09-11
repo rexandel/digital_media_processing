@@ -1,21 +1,28 @@
 import cv2
 import os
+import time
 
-folder = r"C:\Users\rexandel\Desktop\GitHub\digital_media_processing\image_video_io_testing\images"
+folder = r"C:\Users\rexandel\Desktop\GitHub\digital_media_processing\image_video_io_testing\videos"
 
-print(folder)
+video = cv2.VideoCapture(os.path.join(folder, 'rick_roll.mp4'), cv2.CAP_ANY)
 
-img1 = cv2.imread(os.path.join(folder, 'cool_cat.png'), cv2.IMREAD_UNCHANGED)
-img2 = cv2.imread(os.path.join(folder, 'crazy_cat.jpg'), cv2.IMREAD_ANYDEPTH)
-img3 = cv2.imread(os.path.join(folder, 'flower_cat.webp'), cv2.IMREAD_GRAYSCALE)
+fps = video.get(cv2.CAP_PROP_FPS)
 
-cv2.namedWindow('cool_cat', cv2.WINDOW_NORMAL)
-cv2.namedWindow('crazy_cat', cv2.WINDOW_AUTOSIZE)
-cv2.namedWindow('flower_cat', cv2.WINDOW_FULLSCREEN)
+while (True):
+    now = time.time()
+    ret, frame = video.read()
 
-cv2.imshow('cool_cat', img1)
-cv2.imshow('crazy_cat', img2)
-cv2.imshow('flower_cat', img3)
+    if not(ret):
+        break
+    
+    frame = cv2.resize(frame, (1200, 500))
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    cv2.imshow('frame', frame)
+    
+    if cv2.waitKey(1) & 0xFF == 27:
+        break
+    
+    timeDiff = time.time() - now
+    if (timeDiff < 1.0/(fps)):
+        time.sleep(1.0/(fps) - timeDiff)
