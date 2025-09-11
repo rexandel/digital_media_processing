@@ -1,10 +1,12 @@
 import cv2
 import os
 import numpy as np
+from dotenv import load_dotenv
 
+load_dotenv()
 folder = r"C:\Users\rexandel\Desktop\GitHub\digital_media_processing\image_video_io_testing\videos"
 
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(os.getenv('IP_WEB_CAM') + "/video")
 frame_w = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_h = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
