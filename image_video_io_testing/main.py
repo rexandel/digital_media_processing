@@ -15,8 +15,8 @@ while (True):
     if not(ret):
         break
     
-    frame = cv2.resize(frame, (1200, 500))
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    frame = cv2.resize(frame, (600, 500))
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
     cv2.imshow('frame', frame)
     
