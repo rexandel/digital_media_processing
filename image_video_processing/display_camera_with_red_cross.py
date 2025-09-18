@@ -5,6 +5,12 @@ import numpy as np
 folder = r"C:\Users\rexandel\Documents\GitHub\digital_media_processing\image_video_processing\videos"
 video = cv2.VideoCapture(0)
 
+fps = video.get(cv2.CAP_PROP_FPS)
+w = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+h = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+video_writer = cv2.VideoWriter(os.path.join(folder, "video_with_red_cross.mp4"), fourcc, fps, (w, h))
+
 while True:
     ret, frame = video.read()
     if not ret:
@@ -25,8 +31,11 @@ while True:
     cv2.rectangle(frame, (center_x - 50, center_y - 25 // 2), (center_x + 50, center_y + 25 // 2), (0, 0, 255), 5)
 
     cv2.imshow('Video From Camera', frame)
+    video_writer.write(frame)
+    
     if cv2.waitKey(1) & 0xFF == 27:
         break
 
 video.release()
+video_writer.release()
 cv2.destroyAllWindows()

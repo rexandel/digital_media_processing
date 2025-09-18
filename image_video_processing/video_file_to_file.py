@@ -16,7 +16,7 @@ while(True):
         break
 
     grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    cv2.imshow('Grayscale', grayscale)
+    cv2.imshow('Grayscale Ronaldo', grayscale)
 
     video_writer.write(grayscale)
 

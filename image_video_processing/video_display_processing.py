@@ -12,8 +12,8 @@ while(True):
     grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    cv2.imshow('Grayscale', grayscale)
-    cv2.imshow('HSV', hsv)
+    cv2.imshow('Grayscale Ronaldo', grayscale)
+    cv2.imshow('HSV Ronaldo', hsv)
 
     if cv2.waitKey(4) & 0xFF == 27:
         break
