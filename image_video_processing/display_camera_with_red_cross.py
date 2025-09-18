@@ -9,7 +9,7 @@ fps = video.get(cv2.CAP_PROP_FPS)
 w = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 h = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-video_writer = cv2.VideoWriter(os.path.join(folder, "video_with_red_cross.mp4"), fourcc, fps, (w, h))
+video_writer = cv2.VideoWriter(os.path.join(folder, "video_with_adaptive_cross_color.mp4"), fourcc, fps, (w, h))
 
 while True:
     ret, frame = video.read()
@@ -22,13 +22,19 @@ while True:
     center_x = width // 2
     center_y = height // 2
 
+    center_pixel = frame[center_y][center_x]
+    max_color_index = np.argmax(center_pixel)
+    print(f'RGB({center_pixel[2]}, {center_pixel[1]}, {center_pixel[0]})')
+    color = [0, 0, 0]
+    color[max_color_index] = 255
+
     mask = np.zeros((height, width, 3), dtype=np.uint8)
     cv2.rectangle(mask, (center_x - 50, center_y - 25 // 2), (center_x + 50, center_y + 25 // 2), (255, 255, 255), -1)
     blur = cv2.GaussianBlur(frame, (63, 63), 0)
     frame[mask == 255] = blur[mask == 255]
 
-    cv2.rectangle(frame, (center_x - 25 // 2, center_y - 50), (center_x + 25 // 2, center_y + 50), (0, 0, 255), 5)
-    cv2.rectangle(frame, (center_x - 50, center_y - 25 // 2), (center_x + 50, center_y + 25 // 2), (0, 0, 255), 5)
+    cv2.rectangle(frame, (center_x - 25 // 2, center_y - 50), (center_x + 25 // 2, center_y + 50), color, -1)
+    cv2.rectangle(frame, (center_x - 50, center_y - 25 // 2), (center_x + 50, center_y + 25 // 2), color, -1)
 
     cv2.imshow('Video From Camera', frame)
     video_writer.write(frame)
