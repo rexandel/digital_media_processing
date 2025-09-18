@@ -6,11 +6,11 @@ man_image = cv2.imread(r"C:\Users\rexandel\Documents\GitHub\digital_media_proces
 
 cv2.namedWindow('Crazy Cat', cv2.WINDOW_NORMAL)
 cv2.namedWindow('Willem Dafoe', cv2.WINDOW_FULLSCREEN)
-cv2.namedWindow('Outraged man', cv2.WINDOW_KEEPRATIO)
+cv2.namedWindow('Outraged Man', cv2.WINDOW_KEEPRATIO)
 
 cv2.imshow('Crazy Cat', cat_image)
 cv2.imshow('Willem Dafoe', dafoe_image)
-cv2.imshow('Outraged man', man_image)
+cv2.imshow('Outraged Man', man_image)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
