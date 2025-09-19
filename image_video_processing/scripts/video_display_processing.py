@@ -15,7 +15,7 @@ while(True):
     cv2.imshow('Grayscale Ronaldo', grayscale)
     cv2.imshow('HSV Ronaldo', hsv)
 
-    if cv2.waitKey(4) & 0xFF == 27:
+    if cv2.waitKey(3) & 0xFF == 27:
         break
 
 cv2.destroyAllWindows()
