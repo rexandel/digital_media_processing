@@ -14,6 +14,7 @@ video_writer = cv2.VideoWriter(os.path.join(folder, "video_with_adaptive_cross_c
 while True:
     ret, frame = video.read()
     if not ret:
+        print("Ошибка: Не удалось получить кадр")
         break
 
     height = frame.shape[0]
@@ -22,9 +23,9 @@ while True:
     center_x = width // 2
     center_y = height // 2
 
-    center_pixel = frame[center_y][center_x]
+    center_pixel = frame[center_y, center_x]
     max_color_index = np.argmax(center_pixel)
-    print(f'RGB({center_pixel[2]}, {center_pixel[1]}, {center_pixel[0]})')
+    print(f'BGR({center_pixel[0]}, {center_pixel[1]}, {center_pixel[2]})')
     color = [0, 0, 0]
     color[max_color_index] = 255
 
