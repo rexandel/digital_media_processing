@@ -31,11 +31,11 @@ def update_image(frame):
         cv2.imshow('Thresholded + MORPH_CLOSE', imgClosing)
 
         moments = cv2.moments(imgClosing, True)
-        dX = moments['m01']
-        dY = moments['m10']
+        dX = moments['m10']
+        dY = moments['m01']
         dArea = moments['m00']
 
-        print(f"Moment m01: {dX}\nMoment m10: {dY}\nArea: {dArea}\n")
+        print(f"Moment m10: {dX}\nMoment m01: {dY}\nArea: {dArea}\n")
 
     except:
         pass
