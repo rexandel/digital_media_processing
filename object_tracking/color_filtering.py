@@ -1,20 +1,26 @@
 import cv2
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def update_image(frame):
-    LowH = cv2.getTrackbarPos('H_MIN', 'Control')
-    HighH = cv2.getTrackbarPos('H_MAX', 'Control')
-    LowS = cv2.getTrackbarPos('S_MIN', 'Control')
-    HighS = cv2.getTrackbarPos('S_MAX', 'Control')
-    LowV = cv2.getTrackbarPos('V_MIN', 'Control')
-    HighV = cv2.getTrackbarPos('V_MAX', 'Control')
-    
-    imgThresholded = cv2.inRange(frame, (LowH, LowS, LowV), (HighH, HighS, HighV))
-    cv2.imshow('Thresholded', imgThresholded)
-
+    try:
+        LowH = cv2.getTrackbarPos('H_MIN', 'Control')
+        HighH = cv2.getTrackbarPos('H_MAX', 'Control')
+        LowS = cv2.getTrackbarPos('S_MIN', 'Control')
+        HighS = cv2.getTrackbarPos('S_MAX', 'Control')
+        LowV = cv2.getTrackbarPos('V_MIN', 'Control')
+        HighV = cv2.getTrackbarPos('V_MAX', 'Control')
+        
+        imgThresholded = cv2.inRange(frame, (LowH, LowS, LowV), (HighH, HighS, HighV))
+        cv2.imshow('Thresholded', imgThresholded)
+    except:
+        pass
 
 def main():
-    video = cv2.VideoCapture(0)
+    camera_url = os.getenv('IP_WEB_CAM')
+    video = cv2.VideoCapture(camera_url)
 
     cv2.namedWindow('Control', cv2.WINDOW_NORMAL)
 
