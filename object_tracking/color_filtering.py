@@ -26,9 +26,9 @@ def main():
 
     LowH = 0
     HighH = 100
-    LowS = 50
+    LowS = 100
     HighS = 255
-    LowV = 200
+    LowV = 130
     HighV = 255
 
     cv2.createTrackbar('H_MIN', 'Control', LowH, 255, update_image)
