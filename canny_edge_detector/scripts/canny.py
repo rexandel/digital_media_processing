@@ -5,7 +5,7 @@ import numpy as np
 def image_preprocessing(path):
     image = cv2.imread(path, cv2.IMREAD_COLOR)
     grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    grayscale_blur = cv2.GaussianBlur(grayscale, (9, 9), 3)
+    grayscale_blur = cv2.GaussianBlur(grayscale, (5, 5), 1)
     return grayscale_blur
 
 
@@ -106,23 +106,22 @@ def non_maximum_suppression(magnitude, grad_x, grad_y):
             angle = angle_num(grad_x[y, x], grad_y[y, x], tg[y, x])
             
             if angle == 0 or angle == 4:
-                neighbor1 = [y, x - 1]
-                neighbor2 = [y, x + 1]
+                neighbor1 = [y - 1, x]
+                neighbor2 = [y + 1, x]
             elif angle == 1 or angle == 5:
                 neighbor1 = [y - 1, x + 1]
                 neighbor2 = [y + 1, x - 1]
             elif angle == 2 or angle == 6:
-                neighbor1 = [y - 1, x]
-                neighbor2 = [y + 1, x]
+                neighbor1 = [y, x + 1]
+                neighbor2 = [y, x - 1]
             elif angle == 3 or angle == 7:
-                neighbor1 = [y - 1, x - 1]
-                neighbor2 = [y + 1, x + 1]
+                neighbor1 = [y + 1, x + 1]
+                neighbor2 = [y - 1, x - 1]
             else:
-                neighbor1 = [y, x]
-                neighbor2 = [y, x]
+                raise Exception('The angle is not defined')
             
-            if (magnitude[y, x] >= magnitude[neighbor1[0], neighbor1[1]] and magnitude[y, x] >= magnitude[neighbor2[0], neighbor2[1]]):
-                edges[y, x] = magnitude[y, x]
+            if magnitude[y, x] >= magnitude[neighbor1[0], neighbor1[1]] and magnitude[y, x] > magnitude[neighbor2[0], neighbor2[1]]:
+                edges[y, x] = 255
     
     return edges
 
@@ -131,28 +130,25 @@ def double_threshold_filtering(edges, magnitude, low_percent, high_percent):
     max_grad_len = np.max(magnitude)
     low_level = int(max_grad_len * low_percent)
     high_level = int(max_grad_len * high_percent)
-    
-    strong_edges = (edges >= high_level)
-    weak_edges = (edges >= low_level) & (edges < high_level)
-    
-    final_edges = np.zeros_like(edges, dtype=np.uint8)
-    final_edges[strong_edges] = 255
-    
-    height, width = edges.shape
-    for y in range(1, height - 1):
-        for x in range(1, width - 1):
-            if weak_edges[y, x]:
-                for dy in (-1, 0, 1):
-                    for dx in (-1, 0, 1):
-                        if dy == 0 and dx == 0:
-                            continue
-                        ny, nx = y + dy, x + dx
-                        if 0 <= ny < height and 0 <= nx < width:
-                            if strong_edges[ny, nx]:
-                                final_edges[y, x] = 255
-                                break
-    
-    return final_edges
+
+    for y in range(edges.shape[0]):
+        for x in range(edges.shape[1]):
+            if edges[y, x] > 0:
+                if magnitude[y, x] < low_level:
+                    edges[y, x] = 0
+                elif magnitude[y, x] < high_level:
+                    keep = False
+                    for neighbor_y in (y - 1, y, y + 1):
+                        for neighbor_x in (x - 1, x, x + 1):
+                            if neighbor_y != y or neighbor_x != x:
+                                if edges[neighbor_y, neighbor_x] > 0 and magnitude[neighbor_y, neighbor_x] >= high_level:
+                                    keep = True
+                    if not keep:
+                        edges[y, x] = 0
+
+    edges = (edges > 0).astype(np.uint8) * 255
+
+    return edges
 
 
 def canny(path, low_percent, high_percent):
@@ -166,16 +162,16 @@ def canny(path, low_percent, high_percent):
 
 
 def main():
-    path = r"D:\GitHub\digital_media_processing\canny_edge_detector\images\flower.jpg"
+    path = r"D:\GitHub\digital_media_processing\canny_edge_detector\images\plate_number.png"
     
-    low_percent = 0.1
-    high_percent = 0.3
+    low_percent = 0.25
+    high_percent = 0.45
     
     img_preprocessed = image_preprocessing(path)
     magnitude, _, _ = sobel(img_preprocessed)
     
     homemade_canny = canny(path, low_percent, high_percent)
-    opencv_canny = cv2.Canny(img_preprocessed, 50, 150)
+    opencv_canny = cv2.Canny(img_preprocessed, 25, 80)
     
     cv2.namedWindow('Preprocessed Image', cv2.WINDOW_NORMAL)
     cv2.namedWindow('Sobel Magnitude', cv2.WINDOW_NORMAL)

@@ -86,7 +86,7 @@ def save_matrices_to_txt(path, magnitude, grad_x, grad_y, angle):
 
 
 def main():
-    img_preprocessed = image_preprocessing(r"D:\GitHub\digital_media_processing\canny_edge_detector\images\respectable_cat.jpg")
+    img_preprocessed = image_preprocessing(r"D:\GitHub\digital_media_processing\canny_edge_detector\images\cat.jpg")
 
     magnitude, grad_x, grad_y, angle = sobel_filter(img_preprocessed)
 
