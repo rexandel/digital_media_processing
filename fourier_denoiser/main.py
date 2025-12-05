@@ -8,6 +8,8 @@ import scipy.io.wavfile as wav
 import numpy as np
 from audio_enhancer import AudioEnhancer
 from audio_recorder import AudioRecorder
+from signal_overlay_viewer import SignalOverlayViewer
+from spectrogram_viewer import SpectrogramViewer
 
 
 class DenoiserApp:
@@ -20,6 +22,13 @@ class DenoiserApp:
         self.orig_sr = None
         self.result_data = None
         self.result_sr = None
+        
+        self.spectrogram_windows = {
+            'original': None,
+            'result': None
+        }
+        
+        self.signal_overlay_window = None
         
         self.enhancer = AudioEnhancer()
         self.recorder = AudioRecorder()
@@ -73,15 +82,15 @@ class DenoiserApp:
         window_combo.grid(row=1, column=1, sticky="w", pady=(6,0))
 
         ttk.Label(params_frame, text="Количество кадров для оценки шума:").grid(row=2, column=0, sticky="w", pady=(6,0))
-        self.var_noise_frames = tk.StringVar(value="100")
+        self.var_noise_frames = tk.StringVar(value="128")
         ttk.Entry(params_frame, textvariable=self.var_noise_frames, width=8).grid(row=2, column=1, sticky="w", pady=(6,0))
 
         ttk.Label(params_frame, text="Сила подавления шума:").grid(row=2, column=2, sticky="w", pady=(6,0))
-        self.var_reduction_strength = tk.StringVar(value="10")
+        self.var_reduction_strength = tk.StringVar(value="16")
         ttk.Entry(params_frame, textvariable=self.var_reduction_strength, width=8).grid(row=2, column=3, sticky="w", pady=(6,0))
 
         ttk.Label(params_frame, text="Минимальный уровень спектра:").grid(row=3, column=0, sticky="w", pady=(6,0))
-        self.var_spectral_floor = tk.StringVar(value="0.1")
+        self.var_spectral_floor = tk.StringVar(value="0.05")
         ttk.Entry(params_frame, textvariable=self.var_spectral_floor, width=8).grid(row=3, column=1, sticky="w", pady=(6,0))
 
         self.var_use_numpy_fft = tk.BooleanVar(value=False)
@@ -94,7 +103,7 @@ class DenoiserApp:
 
         btn_frame = ttk.Frame(frm)
         btn_frame.grid(row=2, column=0, sticky="ew", padx=4, pady=6)
-        btn_frame.columnconfigure((0,1,2,3,4,5), weight=1)
+        btn_frame.columnconfigure((0,1,2,3,4,5,6,7,8), weight=1)
 
         self.btn_play_orig = ttk.Button(btn_frame, text="Прослушать исходный", command=self.play_original, state="disabled")
         self.btn_play_orig.grid(row=0, column=0, padx=3)
@@ -102,14 +111,23 @@ class DenoiserApp:
         self.btn_stop_play = ttk.Button(btn_frame, text="Остановить воспроизведение", command=self.stop_playback, state="disabled")
         self.btn_stop_play.grid(row=0, column=1, padx=3)
 
+        self.btn_spectrogram_orig = ttk.Button(btn_frame, text="Спектрограмма до", command=self.show_original_spectrogram, state="disabled")
+        self.btn_spectrogram_orig.grid(row=0, column=2, padx=3)
+
         self.btn_process = ttk.Button(btn_frame, text="Улучшить качество", command=self.start_processing, state="disabled")
-        self.btn_process.grid(row=0, column=2, padx=3)
+        self.btn_process.grid(row=0, column=3, padx=3)
 
         self.btn_play_result = ttk.Button(btn_frame, text="Прослушать результат", command=self.play_result, state="disabled")
-        self.btn_play_result.grid(row=0, column=3, padx=3)
+        self.btn_play_result.grid(row=0, column=4, padx=3)
+
+        self.btn_spectrogram_result = ttk.Button(btn_frame, text="Спектрограмма после", command=self.show_result_spectrogram, state="disabled")
+        self.btn_spectrogram_result.grid(row=0, column=5, padx=3)
+
+        self.btn_show_overlay = ttk.Button(btn_frame, text="Наложение сигналов", command=self.show_signal_overlay, state="disabled")
+        self.btn_show_overlay.grid(row=0, column=6, padx=3)
 
         self.btn_save = ttk.Button(btn_frame, text="Сохранить результат...", command=self.save_result, state="disabled")
-        self.btn_save.grid(row=0, column=4, padx=3)
+        self.btn_save.grid(row=0, column=7, padx=3)
 
         status_frame = ttk.Frame(frm)
         status_frame.grid(row=3, column=0, sticky="ew", padx=4, pady=(0,8))
@@ -122,6 +140,95 @@ class DenoiserApp:
 
         self._play_thread = None
         self._play_stop = threading.Event()
+
+    def show_original_spectrogram(self):
+        if self.orig_data is None:
+            return
+            
+        if self.spectrogram_windows['original'] is not None:
+            try:
+                self.spectrogram_windows['original'].close()
+            except:
+                pass
+        
+        self.spectrogram_windows['original'] = SpectrogramViewer(
+            self.root, 
+            title="Спектрограмма исходного аудио"
+        )
+        
+        try:
+            max_samples = min(len(self.orig_data), self.orig_sr * 5)
+            audio_to_show = self.orig_data[:max_samples]
+            
+            self.spectrogram_windows['original'].show_spectrogram(
+                audio_to_show, 
+                self.orig_sr,
+                title=f"Спектрограмма исходного аудио\n{len(audio_to_show)} samples, {self.orig_sr} Hz",
+                cmap='plasma'
+            )
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось построить спектрограмму: {e}")
+
+    def show_result_spectrogram(self):
+        if self.result_data is None:
+            return
+            
+        if self.spectrogram_windows['result'] is not None:
+            try:
+                self.spectrogram_windows['result'].close()
+            except:
+                pass
+        
+        self.spectrogram_windows['result'] = SpectrogramViewer(
+            self.root, 
+            title="Спектрограмма обработанного аудио"
+        )
+        
+        try:
+            max_samples = min(len(self.result_data), self.result_sr * 5)
+            audio_to_show = self.result_data[:max_samples]
+            
+            self.spectrogram_windows['result'].show_spectrogram(
+                audio_to_show, 
+                self.result_sr,
+                title=f"Спектрограмма обработанного аудио\n{len(audio_to_show)} samples, {self.result_sr} Hz",
+                cmap='viridis'
+            )
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось построить спектрограмму: {e}")
+
+    def show_signal_overlay(self):
+        if self.orig_data is None or self.result_data is None:
+            return
+            
+        if self.signal_overlay_window is not None:
+            try:
+                self.signal_overlay_window.close()
+            except:
+                pass
+        
+        self.signal_overlay_window = SignalOverlayViewer(
+            self.root, 
+            title="Наложение сигналов: оригинал vs обработанный"
+        )
+        
+        try:
+            max_samples = min(len(self.orig_data), len(self.result_data), self.orig_sr * 10)
+            orig_to_show = self.orig_data[:max_samples]
+            result_to_show = self.result_data[:max_samples]
+            
+            min_len = min(len(orig_to_show), len(result_to_show))
+            orig_to_show = orig_to_show[:min_len]
+            result_to_show = result_to_show[:min_len]
+            
+            self.signal_overlay_window.show_signals(
+                orig_to_show, 
+                result_to_show,
+                self.orig_sr,
+                title=f"Сравнение сигналов ({min_len} samples, {self.orig_sr} Hz)"
+            )
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось построить график: {e}")
 
     def record_audio(self):
         try:
@@ -186,10 +293,7 @@ class DenoiserApp:
         self.result_sr = None
 
         self.lbl_file.config(text=f"{path} — {self.orig_data.shape} samples, {sr} Hz")
-        self.btn_play_orig.config(state="normal")
-        self.btn_process.config(state="normal")
-        self.btn_play_result.config(state="disabled")
-        self.btn_save.config(state="disabled")
+        self._update_buttons_state()
         self.status_var.set("Файл загружен")
 
     def _playback_worker(self, data: np.ndarray, sr: int):
@@ -308,7 +412,10 @@ class DenoiserApp:
         self.status_var.set(f"Запущено улучшение качества ({fft_type})...")
         self.btn_process.config(state="disabled")
         self.btn_play_orig.config(state="disabled")
+        self.btn_spectrogram_orig.config(state="disabled")
         self.btn_play_result.config(state="disabled")
+        self.btn_spectrogram_result.config(state="disabled")
+        self.btn_show_overlay.config(state="disabled")
         self.btn_save.config(state="disabled")
 
     def _processing_worker(self, audio, sr, params):
@@ -365,31 +472,37 @@ class DenoiserApp:
                 elif typ == "error":
                     self.status_var.set("Ошибка")
                     messagebox.showerror("Ошибка", msg)
-                    self.btn_process.config(state="normal" if self.orig_data is not None else "disabled")
-                    self.btn_play_orig.config(state="normal" if self.orig_data is not None else "disabled")
+                    self._update_buttons_state()
                 elif typ == "done":
                     self.status_var.set(msg)
-                    self.btn_play_result.config(state="normal")
-                    self.btn_save.config(state="normal")
-                    self.btn_process.config(state="normal")
-                    self.btn_play_orig.config(state="normal")
+                    self._update_buttons_state()
                 elif typ == "file_loaded":
                     self.lbl_file.config(text=f"recorded_audio.wav — {len(self.orig_data)} samples, {self.orig_sr} Hz")
-                    self.btn_play_orig.config(state="normal")
-                    self.btn_process.config(state="normal")
-                    self.btn_play_result.config(state="disabled")
-                    self.btn_save.config(state="disabled")
+                    self._update_buttons_state()
                 else:
                     self.status_var.set(msg)
         except queue.Empty:
             pass
         finally:
             self.root.after(200, self._process_queue)
+    
+    def _update_buttons_state(self):
+        """Обновить состояние всех кнопок"""
+        has_original = self.orig_data is not None
+        has_result = self.result_data is not None
+        
+        self.btn_play_orig.config(state="normal" if has_original else "disabled")
+        self.btn_spectrogram_orig.config(state="normal" if has_original else "disabled")
+        self.btn_process.config(state="normal" if has_original else "disabled")
+        self.btn_play_result.config(state="normal" if has_result else "disabled")
+        self.btn_spectrogram_result.config(state="normal" if has_result else "disabled")
+        self.btn_show_overlay.config(state="normal" if has_result else "disabled")
+        self.btn_save.config(state="normal" if has_result else "disabled")
 
 
 def main():
     root = tk.Tk()
-    root.geometry("850x400")
+    root.geometry("1050x400")
     app = DenoiserApp(root)
     root.mainloop()
 
