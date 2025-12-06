@@ -6,7 +6,6 @@ import tkinter as tk
 import numpy as np
 
 class SignalOverlayViewer:
-    
     def __init__(self, parent, title="Наложение сигналов"):
         self.window = tk.Toplevel(parent)
         self.window.title(title)

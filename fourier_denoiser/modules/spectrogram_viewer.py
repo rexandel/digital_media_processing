@@ -5,7 +5,6 @@ from tkinter import ttk, filedialog, messagebox
 import tkinter as tk
 
 class SpectrogramViewer:
-    
     def __init__(self, parent, title="Спектрограмма"):
         self.window = tk.Toplevel(parent)
         self.window.title(title)
