@@ -216,3 +216,4 @@ _ReSharper*/
 *.trx
 *.VisualState.xml
 *.ide/
+./fourier_denoiser/audio/*
