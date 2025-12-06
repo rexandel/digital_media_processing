@@ -24,16 +24,16 @@ class AudioEnhancer:
         spectrum = np.asarray(spectrum, dtype=complex)
         return np.conjugate(self.custom_fft(np.conjugate(spectrum))) / len(spectrum)
 
-    def compute_stft(self, audio_signal, window_size=1024, hop_length=256, window_type='Ханна', use_numpy_fft=False):
-        if window_type == 'Ханна':
+    def compute_stft(self, audio_signal, window_size=1024, hop_length=256, window_type='Ханн', use_numpy_fft=False):
+        if window_type == 'Ханн':
             window_function = np.hanning(window_size)
-        elif window_type == 'Хэмминга':
+        elif window_type == 'Хэмминг':
             window_function = np.hamming(window_size)
-        elif window_type == 'Блэкмана':
+        elif window_type == 'Блэкман':
             window_function = np.blackman(window_size)
-        elif window_type == 'Барлетта':
+        elif window_type == 'Бартлетт':
             window_function = np.bartlett(window_size)
-        elif window_type == 'Кайзера':
+        elif window_type == 'Кайзер':
             window_function = np.kaiser(window_size, beta=14)
         else:
             window_function = np.hanning(window_size)
@@ -69,8 +69,8 @@ class AudioEnhancer:
         reconstructed_signal[non_zero_indices] /= window_accumulator[non_zero_indices]
 
         return reconstructed_signal
-
-    def enhance_audio(self, audio_data, sample_rate, noise_sample_frames=80, noise_reduction_strength=5.5, spectral_floor_level=0.1, window_size=1024, hop_length=256, window_type='hann', use_numpy_fft=False, random_frames_seed=None):
+    
+    def enhance_audio(self, audio_data, sample_rate, noise_sample_frames=80, noise_reduction_strength=5.5, spectral_floor_level=0.1, window_size=1024, hop_length=256, window_type='Ханн', use_numpy_fft=False, random_frames_seed=None, noise_start_ms=0, noise_end_ms=3000):
         if audio_data.dtype != np.float32:
             if audio_data.dtype == np.int16:
                 audio_data = audio_data.astype(np.float32) / 32768.0
@@ -99,39 +99,62 @@ class AudioEnhancer:
         
         n_frames, n_freq_bins = magnitude_spectrum.shape
         
-        if noise_sample_frames >= n_frames:
-            selected_frame_indices = np.arange(n_frames)
-        else:
-            rng = np.random.default_rng(random_frames_seed)
-            selected_frame_indices = rng.choice(
-                n_frames, 
-                size=min(noise_sample_frames, n_frames),
-                replace=False
-            )
-        
-        if len(selected_frame_indices) > 0:
-            rng = np.random.default_rng(random_frames_seed)
-            selected_freq_indices = rng.integers(
-                0, n_freq_bins, 
-                size=len(selected_frame_indices)
-            )
+        if noise_start_ms is not None and noise_end_ms is not None:
+            start_frame = int(noise_start_ms * sample_rate / (1000 * hop_length))
+            end_frame = int(noise_end_ms * sample_rate / (1000 * hop_length))
+            start_frame = max(0, min(start_frame, n_frames - 1))
+            end_frame = max(start_frame + 1, min(end_frame, n_frames))
             
-            random_amplitudes = []
-            for frame_idx, freq_idx in zip(selected_frame_indices, selected_freq_indices):
-                random_amplitudes.append(magnitude_spectrum[frame_idx, freq_idx])
+            if end_frame > start_frame:
+                segment_frames = magnitude_spectrum[start_frame:end_frame, :]
+                segment_estimate = np.median(segment_frames, axis=0)
+            else:
+                segment_estimate = np.min(magnitude_spectrum, axis=0)
             
-            random_amplitudes = np.array(random_amplitudes)
-            percentile_amplitude = np.percentile(random_amplitudes, 25)
-
-            noise_estimate = np.full(n_freq_bins, percentile_amplitude)
-        else:
-            noise_estimate = np.full(n_freq_bins, np.min(magnitude_spectrum))
-
+            if noise_sample_frames >= n_frames:
+                selected_frame_indices = np.arange(n_frames)
+            else:
+                rng = np.random.default_rng(random_frames_seed)
+                selected_frame_indices = rng.choice(
+                    n_frames, 
+                    size=min(noise_sample_frames, n_frames),
+                    replace=False
+                )
+            
+            if len(selected_frame_indices) > 0:
+                rng = np.random.default_rng(random_frames_seed)
+                selected_freq_indices = rng.integers(
+                    0, n_freq_bins, 
+                    size=len(selected_frame_indices)
+                )
+                
+                random_amplitudes = []
+                for frame_idx, freq_idx in zip(selected_frame_indices, selected_freq_indices):
+                    random_amplitudes.append(magnitude_spectrum[frame_idx, freq_idx])
+                
+                random_amplitudes = np.array(random_amplitudes)
+                random_percentile = np.percentile(random_amplitudes, 25)
+                random_estimate = np.full(n_freq_bins, random_percentile)
+            else:
+                random_estimate = np.full(n_freq_bins, np.min(magnitude_spectrum))
+            
+            noise_estimate = np.sqrt(segment_estimate * random_estimate) + 0.1 * np.abs(segment_estimate - random_estimate)
+            
         small_value = 1e-8
+        
         noise_subtracted = magnitude_spectrum - noise_reduction_strength * noise_estimate[np.newaxis, :]
-
-        suppression_gain = np.maximum(noise_subtracted / (magnitude_spectrum + small_value), spectral_floor_level)
-
+        
+        suppression_gain = np.maximum(
+            noise_subtracted / (magnitude_spectrum + small_value),
+            spectral_floor_level
+        )
+        
+        protection_mask = magnitude_spectrum < 2.0 * noise_estimate[np.newaxis, :]
+        suppression_gain[protection_mask] = np.maximum(
+            suppression_gain[protection_mask],
+            0.3
+        )
+        
         cleaned_spectrogram = suppression_gain * magnitude_spectrum * np.exp(1j * phase_spectrum)
 
         enhanced_audio = self.compute_istft(

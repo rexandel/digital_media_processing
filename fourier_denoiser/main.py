@@ -63,26 +63,26 @@ class DenoiserApp:
             params_frame.columnconfigure(i, weight=1)
 
         ttk.Label(params_frame, text="Размер окна STFT:").grid(row=0, column=0, sticky="w")
-        self.var_window_size = tk.StringVar(value="1024")
+        self.var_window_size = tk.StringVar(value="2048")
         ttk.Entry(params_frame, textvariable=self.var_window_size, width=8).grid(row=0, column=1, sticky="w")
 
         ttk.Label(params_frame, text="Шаг окна (hop):").grid(row=0, column=2, sticky="w")
-        self.var_hop_length = tk.StringVar(value="256")
+        self.var_hop_length = tk.StringVar(value="512")
         ttk.Entry(params_frame, textvariable=self.var_hop_length, width=8).grid(row=0, column=3, sticky="w")
 
         ttk.Label(params_frame, text="Оконная функция:").grid(row=1, column=0, sticky="w", pady=(6,0))
-        self.var_window_type = tk.StringVar(value="Ханна")
+        self.var_window_type = tk.StringVar(value="Ханн")
         window_combo = ttk.Combobox(
             params_frame, 
             textvariable=self.var_window_type, 
-            values=['Ханна', 'Хэмминга', 'Блэкмана', 'Барлетта', 'Кайзера'],
+            values=['Ханн', 'Хэмминг', 'Блэкман', 'Бартлетт', 'Кайзер'],
             width=10,
             state="readonly"
         )
         window_combo.grid(row=1, column=1, sticky="w", pady=(6,0))
 
         ttk.Label(params_frame, text="Количество кадров для оценки шума:").grid(row=2, column=0, sticky="w", pady=(6,0))
-        self.var_noise_frames = tk.StringVar(value="128")
+        self.var_noise_frames = tk.StringVar(value="256")
         ttk.Entry(params_frame, textvariable=self.var_noise_frames, width=8).grid(row=2, column=1, sticky="w", pady=(6,0))
 
         ttk.Label(params_frame, text="Сила подавления шума:").grid(row=2, column=2, sticky="w", pady=(6,0))
@@ -90,7 +90,7 @@ class DenoiserApp:
         ttk.Entry(params_frame, textvariable=self.var_reduction_strength, width=8).grid(row=2, column=3, sticky="w", pady=(6,0))
 
         ttk.Label(params_frame, text="Минимальный уровень спектра:").grid(row=3, column=0, sticky="w", pady=(6,0))
-        self.var_spectral_floor = tk.StringVar(value="0.05")
+        self.var_spectral_floor = tk.StringVar(value="0.15")
         ttk.Entry(params_frame, textvariable=self.var_spectral_floor, width=8).grid(row=3, column=1, sticky="w", pady=(6,0))
 
         self.var_use_numpy_fft = tk.BooleanVar(value=False)
@@ -423,7 +423,7 @@ class DenoiserApp:
             fft_type = "NumPy FFT" if params['use_numpy_fft'] else "кастомный FFT"
             self.q.put(("info", f"Обработка ({fft_type}): окно={params['window_size']}, шаг={params['hop_length']}, функция={params['window_type']}, кадров шума={params['noise_sample_frames']}, сила={params['noise_reduction_strength']}"))
             
-            den = self.enhancer.enhance_audio(
+            den = self.enhancer.enhance_audio_new(
                 audio_data=audio,
                 sample_rate=sr,
                 noise_sample_frames=params['noise_sample_frames'],
@@ -487,7 +487,6 @@ class DenoiserApp:
             self.root.after(200, self._process_queue)
     
     def _update_buttons_state(self):
-        """Обновить состояние всех кнопок"""
         has_original = self.orig_data is not None
         has_result = self.result_data is not None
         
@@ -502,7 +501,7 @@ class DenoiserApp:
 
 def main():
     root = tk.Tk()
-    root.geometry("1050x400")
+    root.geometry("1500x400")
     app = DenoiserApp(root)
     root.mainloop()
 

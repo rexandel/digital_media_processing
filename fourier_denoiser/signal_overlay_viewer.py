@@ -177,6 +177,7 @@ class SignalOverlayViewer:
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось сохранить файл: {e}")
     
+    def close(self):
         self.is_closed = True
         plt.close(self.fig)
         self.window.destroy()
