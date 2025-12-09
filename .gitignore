@@ -217,3 +217,4 @@ _ReSharper*/
 *.VisualState.xml
 *.ide/
 fourier_denoiser/audio/*
+mnist_neural_network/mnist
